@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora de Pagos con Marca y Descuentos Venege</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; max-width: 600px; }
+    input, select, button {
+      display: block;
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    h2 { color: #222; }
+    #resultado {
+      white-space: pre-line;
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 6px;
+    }
+    .resaltado {
+      font-size: 20px;
+      font-weight: bold;
+      color: #b30000;
+      margin-top: 10px;
+    }
+    #loginSection, #calculadoraSection {
+      display: none;
+    }
+    #loginSection.active, #calculadoraSection.active {
+      display: block;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 🔐 LOGIN -->
+<div id="loginSection" class="active">
+  <h2>🔐 Acceso a la Calculadora</h2>
+  <label>Usuario:</label>
+  <input type="text" id="usuario" placeholder="Ej: JLUNA">
+
+  <label>Clave:</label>
+  <input type="password" id="clave" placeholder="Ej: 2654">
+
+  <button onclick="validarLogin()">Ingresar</button>
+  <div id="mensajeLogin" class="error"></div>
+</div>
+
+<!-- 🧾 CALCULADORA -->
+<div id="calculadoraSection">
+  <h2>🧾 Calculadora de Pagos con Descuento por Marca Venege</h2>
+
+  <label>Monto total de la factura ($):</label>
+  <input type="text" id="montoFactura" placeholder="Ej: 1.000" oninput="formatearNumero(this)">
+
+  <label>Marca:</label>
+  <select id="marca">
+    <option value="Firestone_Alix">Firestone / Alix</option>
+    <option value="Michelin_BF">Michelin / BFGoodrich</option>
+  </select>
+
+  <label>Monto a pagar en Zelle/Panamá/USDT ($):</label>
+  <input type="text" id="montoZelle" placeholder="Ej: 100" oninput="formatearNumero(this)">
+
+  <label>Monto a pagar en Cash ($):</label>
+  <input type="text" id="montoCash" placeholder="Ej: 200" oninput="formatearNumero(this)">
+
+  <label>Monto a pagar en Bs:</label>
+  <input type="text" id="montoBs" placeholder="Ej: 3.000" oninput="formatearNumero(this)">
+
+  <label>Tasa de cambio Bs/USD:</label>
+  <input type="text" id="tasa" placeholder="Ej: 100" oninput="formatearNumero(this)">
+
+  <button onclick="calcular()">Calcular</button>
+
+  <div id="resultado"></div>
+</div>
+
+<script>
+// Descuentos por marca
+const descuentosPorMarca = {
+  Firestone_Alix: {
+    Digital: 0.3042,
+    Cash: 0.29
+  },
+  Michelin_BF: {
+    Digital: 0.4180,
+    Cash: 0.40
+  }
+};
+
+// Login
+function validarLogin() {
+  const usuario = document.getElementById('usuario').value.trim().toUpperCase();
+  const clave = document.getElementById('clave').value.trim();
+  const mensaje = document.getElementById('mensajeLogin');
+
+  if (usuario === 'JLUNA' && clave === '2654') {
+    document.getElementById('loginSection').classList.remove('active');
+    document.getElementById('calculadoraSection').classList.add('active');
+  } else {
+    mensaje.textContent = "⛔ Usuario o clave no válidos";
+  }
+}
+
+// Formato numérico
+function formatearNumero(input) {
+  const valor = input.value.replace(/\./g, '').replace(',', '.');
+  if (!isNaN(valor)) {
+    input.value = Number(valor).toLocaleString('es-VE');
+  }
+}
+
+// Convertir input a número decimal
+function obtenerValorNumerico(id) {
+  const raw = document.getElementById(id).value.replace(/\./g, '').replace(',', '.');
+  return parseFloat(raw) || 0;
+}
+
+// Cálculo principal
+function calcular() {
+  const montoFactura = obtenerValorNumerico('montoFactura');
+  const marca = document.getElementById('marca').value;
+  const zelle = obtenerValorNumerico('montoZelle');
+  const cash = obtenerValorNumerico('montoCash');
+  const bs = obtenerValorNumerico('montoBs');
+  const tasa = obtenerValorNumerico('tasa');
+  const resultadoDiv = document.getElementById('resultado');
+
+  if (montoFactura <= 0) {
+    resultadoDiv.innerHTML = "⚠️ Debes ingresar un monto válido de factura.";
+    return;
+  }
+
+  if (bs > 0 && tasa <= 0) {
+    resultadoDiv.innerHTML = "⚠️ Debes ingresar una tasa válida si estás pagando en bolívares.";
+    return;
+  }
+
+  const descuentos = descuentosPorMarca[marca];
+  const factorDigital = 1 / (1 - descuentos.Digital);
+  const factorCash = 1 / (1 - descuentos.Cash);
+
+  const valorZelle = zelle * factorDigital;
+  const valorCash = cash * factorCash;
+  const valorBs = (bs > 0 && tasa > 0) ? bs / tasa : 0;
+
+  const totalPagado = valorZelle + valorCash + valorBs;
+  const saldo = montoFactura - totalPagado;
+
+  resultadoDiv.innerHTML =
+    `🧾 Monto Factura: $${montoFactura.toLocaleString('es-VE', {minimumFractionDigits: 2})}\n` +
+    `🏷️ Marca: ${marca.replace('_', ' / ')} — Descuento Digital: ${(descuentos.Digital * 100).toFixed(2)}% | Cash: ${(descuentos.Cash * 100).toFixed(2)}%\n\n` +
+    `💳 Zelle/Panamá/USDT pagado: $${zelle.toLocaleString('es-VE', {minimumFractionDigits: 2})} → Equivale a $${valorZelle.toLocaleString('es-VE', {minimumFractionDigits: 2})}\n` +
+    `💵 Cash pagado:  $${cash.toLocaleString('es-VE', {minimumFractionDigits: 2})} → Equivale a $${valorCash.toLocaleString('es-VE', {minimumFractionDigits: 2})}\n` +
+    `🇻🇪 Bs pagados: Bs ${bs.toLocaleString('es-VE', {minimumFractionDigits: 2})} @ Tasa ${tasa.toFixed(4)} → Equivale a $${valorBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}\n\n` +
+    `✅ Total abonado (valor factura): $${totalPagado.toLocaleString('es-VE', {minimumFractionDigits: 2})}\n` +
+    `<div class="resaltado">🔻 Saldo pendiente: $${saldo.toLocaleString('es-VE', {minimumFractionDigits: 2})}</div>`;
+}
+</script>
+
+</body>
+</html>

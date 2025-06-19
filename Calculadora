@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora de Factura con Descuento</title>
+  <style>
+    body { font-family: Arial; margin: 40px; }
+    input, button { padding: 8px; margin: 5px; }
+  </style>
+</head>
+<body>
+
+  <h2>🧮 Calculadora de Factura con Descuento</h2>
+
+  <label>Monto Pagado ($): </label>
+  <input type="number" id="montoPagado" step="0.01"><br>
+
+  <label>Descuento (%): </label>
+  <input type="number" id="porcentajeDescuento" step="0.01"><br>
+
+  <button onclick="calcularFactura()">Calcular</button>
+
+  <h3 id="resultado"></h3>
+
+  <script>
+    function calcularFactura() {
+      const pago = parseFloat(document.getElementById("montoPagado").value);
+      const descuento = parseFloat(document.getElementById("porcentajeDescuento").value) / 100;
+
+      if (isNaN(pago) || isNaN(descuento) || descuento >= 1 || descuento < 0) {
+        document.getElementById("resultado").textContent = "Por favor, introduce valores válidos.";
+        return;
+      }
+
+      const montoFactura = pago / (1 - descuento);
+      document.getElementById("resultado").textContent = `El monto facturado antes del ${descuento * 100}% de descuento era: $${montoFactura.toFixed(2)}`;
+    }
+  </script>
+
+</body>
+</html>
